@@ -8,7 +8,7 @@ from nltk_utils import bag_of_words, tokenize
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-with open('dataset105.json', 'r') as json_data:
+with open('dataset.json', 'r') as json_data:
     intents = json.load(json_data)
 
 FILE = "data.pth"
@@ -25,9 +25,11 @@ model = NeuralNet(input_size, hidden_size, output_size).to(device)
 model.load_state_dict(model_state)
 model.eval()
 
-bot_name = "Sam"
+bot_name = "Vova"
 
-def get_response(msg):
+context = {}
+
+def get_response(msg, userID='542', show_details = False):
     sentence = tokenize(msg)
     X = bag_of_words(sentence, all_words)
     X = X.reshape(1, X.shape[0])
@@ -43,19 +45,25 @@ def get_response(msg):
     if prob.item() > 0.75:
         for intent in intents['intents']:
             if tag == intent["tag"]:
-                return random.choice(intent['responses'])
+                if 'context_set' in intent:
+                    if show_details : print ('context:', intent['context_set'])
+                    context[userID] = intent['context_set']
+                
+                if not 'context_filter' in intent or \
+                    (userID in context and 'context_filter' in intent and intent['context_filter'] == context[userID]):
+                    if show_details: print ('tag:', intent['tag'])
+                    return random.choice(intent['responses'])
     
-    return "I do not understand..."
+    return "Ми пробонуємо Вам зателефонувати менеджеру стосовно Вашного питання\n3809xxxxxx46"
 
 
 if __name__ == "__main__":
     print("Let's chat! (type 'quit' to exit)")
     while True:
-        # sentence = "do you use credit cards?"
+       
         sentence = input("You: ")
         if sentence == "quit":
             break
 
         resp = get_response(sentence)
         print(resp)
-
